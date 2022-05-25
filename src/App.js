@@ -9,6 +9,8 @@ import DiaryEditor from "./DiaryEditor";
 import DiaryList from "./DiaryList";
 import "./App.css";
 
+// 상태관리 함수를 reducer를 활용하여 간단하게 정리
+// App component의 복잡성을 줄임
 const reducer = (state, action) => {
   switch (action.type) {
     case "INIT": {
@@ -35,6 +37,7 @@ const reducer = (state, action) => {
   }
 };
 
+// provider를 사용하기 위한 context 설정
 export const DiaryStateContext = React.createContext();
 export const DiaryDispatchContext = React.createContext();
 
