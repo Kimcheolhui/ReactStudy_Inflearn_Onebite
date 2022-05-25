@@ -1,25 +1,123 @@
-import logo from './logo.svg';
-import './App.css';
+import React, {
+  useRef,
+  useEffect,
+  useMemo,
+  useCallback,
+  useReducer,
+} from "react";
+import DiaryEditor from "./DiaryEditor";
+import DiaryList from "./DiaryList";
+import "./App.css";
 
-function App() {
+const reducer = (state, action) => {
+  switch (action.type) {
+    case "INIT": {
+      return action.data;
+    }
+    case "CREATE": {
+      const created_date = new Date().getTime();
+      const newItem = {
+        ...action.data,
+        created_date,
+      };
+      return [newItem, ...state];
+    }
+    case "REMOVE": {
+      return state.filter(it => it.id !== action.targetId);
+    }
+    case "EDIT": {
+      return state.map(it =>
+        it.id === action.targetId ? { ...it, content: action.newContent } : it
+      );
+    }
+    default:
+      return state;
+  }
+};
+
+export const DiaryStateContext = React.createContext();
+export const DiaryDispatchContext = React.createContext();
+
+const App = () => {
+  const [data, dispatch] = useReducer(reducer, []);
+
+  const dataId = useRef(0);
+
+  const getData = async () => {
+    const res = await fetch(
+      "https://jsonplaceholder.typicode.com/comments"
+    ).then(res => res.json());
+
+    const initData = res.slice(0, 20).map(it => {
+      return {
+        author: it.email,
+        content: it.body,
+        emotion: Math.floor(Math.random() * 5) + 1,
+        created_date: new Date().getTime(),
+        id: dataId.current++,
+      };
+    });
+    // type과 data는 action 객체의 key
+    dispatch({ type: "INIT", data: initData });
+  };
+
+  useEffect(() => {
+    getData();
+  }, []);
+
+  // React에서 state가 변경되면 rerender가 되면서 각 요소들에 state가 업데이트가 되어야 하는데
+  // useCallback의 deps에 빈 배열을 사용하게 되면, rerender가 절대 일어나지 않기 때문에 onCreate 함수에 대한 state 변경이 이뤄지지 않는다
+  const onCreate = useCallback((author, content, emotion) => {
+    dispatch({
+      type: "CREATE",
+      data: {
+        author,
+        content,
+        emotion,
+        id: dataId.current,
+      },
+    });
+
+    dataId.current += 1;
+  }, []);
+
+  const onRemove = useCallback(targetId => {
+    dispatch({ type: "REMOVE", targetId });
+  }, []);
+
+  const onEdit = useCallback((targetId, newContent) => {
+    dispatch({ type: "EDIT", targetId, newContent });
+  }, []);
+
+  // memoizedDispatches객체의 재생성을 방지하기 위해
+  // useMemo를 사용
+  const memoizedDispatches = useMemo(() => {
+    return { onCreate, onRemove, onEdit };
+  }, []);
+
+  const getDiaryAnalysis = useMemo(() => {
+    const goodCount = data.filter(it => it.emotion >= 3).length;
+    const badCount = data.length - goodCount;
+    const goodRatio = (goodCount / data.length) * 100;
+    return { goodCount, badCount, goodRatio };
+  }, [data.length]);
+
+  const { goodCount, badCount, goodRatio } = getDiaryAnalysis;
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <DiaryStateContext.Provider value={data}>
+      <DiaryDispatchContext.Provider value={memoizedDispatches}>
+        <div className="App">
+          <DiaryEditor />
+          <div>전체 일기 : {data.length}</div>
+          <div>기분 좋은 일기 개수 : {goodCount}</div>
+          <div>기분 나쁜 일기 개수 : {badCount}</div>
+          <div>기분 좋은 일기 비율 : {goodRatio}</div>
+          <DiaryList />
+        </div>
+      </DiaryDispatchContext.Provider>
+    </DiaryStateContext.Provider>
   );
-}
+};
 
 export default App;
