@@ -11,6 +11,7 @@ import "./App.css";
 
 // 상태관리 함수를 reducer를 활용하여 간단하게 정리
 // App component의 복잡성을 줄임
+// 각각의 case는 return 값을 가지는데, 해당 값이 state의 새로운 값이 된다
 const reducer = (state, action) => {
   switch (action.type) {
     case "INIT": {
@@ -42,15 +43,25 @@ export const DiaryStateContext = React.createContext();
 export const DiaryDispatchContext = React.createContext();
 
 const App = () => {
+  // useReducer를 사용하기 위한 선언
+  // data는 state, dispatch는 data 상태 변경을 일으키기 위한 함수
+  // reducer는 상태 변경의 상세한 내용을 가진 함수이다.
+  // reducer가 return하는 값이 state의 새로운 값이 된다.
   const [data, dispatch] = useReducer(reducer, []);
 
+  // useRef를 사용하는 이유
+  // useRef는 rerendering을 발생시키지 않기 때문
+  // 만약 const dataId = 0;을 사용했다면
+  // dataId++가 될 때마다 rerendering이 발생했을 것
   const dataId = useRef(0);
 
   const getData = async () => {
+    // api를 활용하여 데이터 불러오기
     const res = await fetch(
       "https://jsonplaceholder.typicode.com/comments"
     ).then(res => res.json());
 
+    // 배열.slice(n,m)은 특정 구간만 가져오는 배열함수
     const initData = res.slice(0, 20).map(it => {
       return {
         author: it.email,
@@ -64,6 +75,7 @@ const App = () => {
     dispatch({ type: "INIT", data: initData });
   };
 
+  // deps로 빈 배열을 주면 컴포넌트가 처음 render되었을 때만 실행하게 된다
   useEffect(() => {
     getData();
   }, []);
@@ -80,7 +92,6 @@ const App = () => {
         id: dataId.current,
       },
     });
-
     dataId.current += 1;
   }, []);
 
@@ -94,10 +105,14 @@ const App = () => {
 
   // memoizedDispatches객체의 재생성을 방지하기 위해
   // useMemo를 사용
+  // memoizedDispatches를 useMemo없이 정의하게 되면,
+  // <DiaryStateContext.Provider value={data}>가 rerender될 때
+  // memoizedDispatches도 rerender되기 때문에 이를 방지하고자 useMemo를 사용한다
   const memoizedDispatches = useMemo(() => {
     return { onCreate, onRemove, onEdit };
   }, []);
 
+  // 데이터의 길이가 바뀔 때만 rerender가 발생한다
   const getDiaryAnalysis = useMemo(() => {
     const goodCount = data.filter(it => it.emotion >= 3).length;
     const badCount = data.length - goodCount;
