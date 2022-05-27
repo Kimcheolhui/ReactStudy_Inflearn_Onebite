@@ -2,8 +2,10 @@ import React, { useState, useRef, useContext } from "react";
 import { DiaryDispatchContext } from "./App";
 
 const DiaryEditor = () => {
+  // provider 사용를 사용하여 onCreate 함수를 불러온다
   const { onCreate } = useContext(DiaryDispatchContext);
 
+  // Create 조건이 충족되지 않을 경우 해당 부분에 focus를 주기 위해 사용된다
   const authorInput = useRef();
   const contentInput = useRef();
 
@@ -13,7 +15,9 @@ const DiaryEditor = () => {
     emotion: 1,
   });
 
-  // 사용자 타이핑 값 state에 바로 반영
+  // 사용자가 입력한 값을 실시간으로 반영한다
+  // author(또는 content)를 수정할 경우, content(또는 author)는 그대로 놔두고 (...state)
+  // author(또는 content)를 실시간으로 반영 (e.target.name은 author(또는 content)를 지정한다)
   const handleChangeState = e => {
     setState({
       ...state,
@@ -22,6 +26,7 @@ const DiaryEditor = () => {
   };
 
   // 조건에 부합하는지 확인 후, onCreate 함수로 state 넘겨서 data에 저장
+  // 부합하지 않을 경우, 해당 부분에 focus를 준 후 return
   const handleSubmit = () => {
     if (state.author.length < 1) {
       authorInput.current.focus();
