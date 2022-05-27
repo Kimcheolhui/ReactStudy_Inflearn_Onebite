@@ -2,7 +2,7 @@ import React, { useState, useRef, useContext } from "react";
 import { DiaryDispatchContext } from "./App";
 
 const DiaryEditor = () => {
-  // provider 사용를 사용하여 onCreate 함수를 불러온다
+  // provider를 사용하여 상태변화 함수를 불러온다
   const { onCreate } = useContext(DiaryDispatchContext);
 
   // Create 조건이 충족되지 않을 경우 해당 부분에 focus를 주기 위해 사용된다
